@@ -1,0 +1,15 @@
+/node_modules
+/.next/
+/out/
+/build
+next-env.d.ts
+.env*.local
+*.tsbuildinfo
+.DS_Store
+
+# Tauri (desktop) build artifacts — the src-tauri source IS committed, these are generated
+/src-tauri/target/
+/src-tauri/gen/
+.smoke*.mjs
+.probe.mjs
+.cap*.mjs

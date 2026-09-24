@@ -81,7 +81,7 @@ async def _run(args: argparse.Namespace) -> int:
 
         # Step 4 — screener: ROE > 15, P/E < 20
         req = ScreenerRequest(roe_min=15, pe_max=20, limit=10, sort_by="quant_score")
-        results, total = await run_screener(session, req)
+        results, total, _ = await run_screener(session, req)
         print(f"\n[4] Screener (ROE>15, P/E<20) — {len(results)}/{total} matched, top 10:")
         print(f"    {'#':>2} {'SYM':<5} {'GRADE':>6} {'SCORE':>6} {'PE':>6} {'ROE%':>7} {'NAME'}")
         for i, r in enumerate(results, 1):

@@ -90,3 +90,7 @@ commodities/FX) and **CoinGecko** (crypto) need no key; **FRED** (macro) uses a 
 
 - Provider HTTP: rate-limited, 10s timeout, 3 retries. VCI needs a handshake + gentle pacing.
 - Type safety: Pydantic v2 (backend), TypeScript strict (frontend).
+
+## License
+
+Apache License 2.0 — see [LICENSE](LICENSE). Market data is fetched from third-party public sources (VCI, CafeF, Vietstock, etc.) that have their own terms; this license covers the code only, not the data.

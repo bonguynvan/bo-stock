@@ -24,10 +24,8 @@ def _pct(part: float, whole: float) -> float | None:
     return round(part / whole * 100, 2) if whole else None
 
 
-async def get_analysis(session: AsyncSession, user_id: int | None = None) -> dict:
+async def get_analysis(session: AsyncSession) -> dict:
     stmt = select(Position).order_by(Position.created_at)
-    if user_id is not None:
-        stmt = stmt.where(Position.user_id == user_id)
     positions = (await session.execute(stmt)).scalars().all()
     if not positions:
         return {

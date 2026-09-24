@@ -1,10 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { getMe, logout } from "@/lib/api";
-import { IS_DESKTOP } from "@/lib/desktop";
-
 interface NavItem {
   icon: string;
   label: string;
@@ -66,23 +61,6 @@ interface SideNavBarProps {
 }
 
 export default function SideNavBar({ active, onNavigate }: SideNavBarProps) {
-  const router = useRouter();
-  const [isAdmin, setIsAdmin] = useState(false);
-  useEffect(() => {
-    if (IS_DESKTOP) return; // no auth in desktop mode → no admin link, no session probe
-    let cancelled = false;
-    getMe().then((u) => !cancelled && setIsAdmin(Boolean(u?.is_admin))).catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-  const signOut = async () => {
-    try {
-      await logout();
-    } finally {
-      router.replace("/login");
-    }
-  };
   return (
     <aside className="flex flex-col h-full w-16 md:w-64 bg-surface-container-lowest border-r border-outline-variant transition-all duration-300">
       <div className="p-4 border-b border-outline-variant hidden md:block">
@@ -140,28 +118,6 @@ export default function SideNavBar({ active, onNavigate }: SideNavBarProps) {
       {/* Research-only tool: no order execution. A scope reminder replaces the
           design mock's "Execute Order" CTA. */}
       <div className="p-3 border-t border-outline-variant space-y-2">
-        {isAdmin && (
-          <button
-            type="button"
-            onClick={() => router.push("/admin")}
-            className="w-full flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all duration-150 cursor-pointer active:scale-95"
-            title="Quản trị"
-          >
-            <span className="material-symbols-outlined">admin_panel_settings</span>
-            <span className="font-label-caps text-label-caps hidden md:inline uppercase">Quản trị</span>
-          </button>
-        )}
-        {!IS_DESKTOP && (
-          <button
-            type="button"
-            onClick={signOut}
-            className="w-full flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all duration-150 cursor-pointer active:scale-95"
-            title="Đăng xuất"
-          >
-            <span className="material-symbols-outlined">logout</span>
-            <span className="font-label-caps text-label-caps hidden md:inline uppercase">Đăng xuất</span>
-          </button>
-        )}
         <div className="text-on-surface-variant font-label-caps text-label-caps uppercase tracking-widest text-center opacity-60 hidden md:block">
           Research Only
         </div>

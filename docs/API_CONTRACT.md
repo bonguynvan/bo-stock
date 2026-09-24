@@ -57,19 +57,9 @@ interface StockDetail extends StockResult {
 }
 ```
 
-## Auth (self-hosted JWT, httpOnly cookie)
+## Access model
 
-Private-beta gating. JWT (HS256) in an httpOnly cookie (`vnios_session`); frontend sends `credentials: "include"`, CORS `allow_credentials=true` with explicit origins. When `AUTH_REQUIRED=true` (prod), an `auth_gate` middleware rejects non-public routes without a valid session (public = `/`, `/health`, `/auth/*`, `/waitlist`, `/docs`, `/openapi.json`, `/redoc`). Default off for dev/tests. No per-user data scoping yet (multi-tenancy is a later migration).
-
-- **POST /auth/register** `{email, password, invite_code?}` → sets cookie, `data: {id, email, is_admin}`. `400` bad email/password (min 8 chars); `403` wrong invite code (when `AUTH_INVITE_CODE` set); `409` email taken.
-- **POST /auth/login** `{email, password}` → sets cookie, `data: {id,email,is_admin}`. `401` bad credentials (same message whether email exists or not).
-- **POST /auth/logout** → clears cookie.
-- **GET /auth/me** → `data: {id,email,is_admin}` or `401`.
-- **POST /waitlist** `{email, note?}` (public) → `data: {ok, email}`, idempotent per email (no enumeration). `400` bad email.
-- **GET /admin/waitlist** (admin only) → `data: [{id,email,note,created_at}]`, newest first. `403` non-admin.
-- **GET /admin/stats** (admin only) → `data: {users, waitlist}`. `403` non-admin.
-
-Admin is granted via `ADMIN_EMAILS` (comma-separated) — reconciled onto `is_admin` at register/login; `require_admin` gates the `/admin/*` routes and `/auth/me` reports `is_admin` so the UI shows the admin link.
+Single-user, **no authentication**: every endpoint is open and the personal tables (watchlist, positions, journal, notes, playbook, dashboard, alerts, saved filters) are global to the instance. Run it locally / on a trusted network — see the README security note.
 
 ## Endpoints
 
@@ -148,7 +138,7 @@ Latest metrics for an ad-hoc symbol set (order preserved, capped 12; unknowns dr
 Multi-symbol comparison PDF (metric table + per-symbol lenses + fraud screen), rendered
 HTML→Chromium. Returns `application/pdf` (attachment). `400` if no symbols.
 
-## Watchlist (per-user — requires login)
+## Watchlist (single-user)
 
 `symbols` is stored as a JSON array of strings (upper-cased, de-duped, blanks dropped).
 
@@ -174,7 +164,7 @@ Portfolio risk stats from holdings' OHLC history (research-only, descriptive). �
 max_drawdown, var_95}, correlations:[{a,b,corr}] }`. `available:false` + `note` when there
 isn't enough price history (metrics fields are fractions: 0.24 = 24%).
 
-## Investment Journal (per-user — requires login)
+## Investment Journal (single-user)
 
 Personal thesis notes — research only (no positions/quantity/P&L/advice).
 
@@ -196,7 +186,7 @@ Setting `review_note` the first time stamps `reviewed_at`. → `data: JournalEnt
 ### DELETE /journal/{id}
 → `data: { id, deleted: true }` | `404`
 
-## Research notes (per-user — requires login)
+## Research notes (single-user)
 
 Free-form timestamped notes, optionally attached to a symbol (simpler than the Journal).
 
@@ -205,7 +195,7 @@ POST body `{ symbol?, content }` (content required; symbol trimmed/uppercased, b
 GET filters by `symbol`, newest first. PUT body `{ content }`. →
 `data: Note = { id, symbol, content, created_at, updated_at }`.
 
-## Watchlist alerts (per-user — requires login)
+## Watchlist alerts (single-user)
 
 Threshold rules over stock metrics — a rule surfaces a FLAG when a metric crosses a
 threshold (research-only; no orders/advice).
@@ -223,7 +213,7 @@ Followed symbols (every watchlist's symbols ∪ open portfolio positions) curren
 Rules currently firing, evaluated against the symbols' latest metrics. →
 `data: (AlertRule & { current })[]`, `meta: { rules, fired }`.
 
-## BCTC Documents + AI analysis (per-user — requires login)
+## BCTC Documents + AI analysis (single-user)
 
 PDFs stored on local FS (`UPLOAD_DIR`, default `uploads/`); path + analysis JSON in DB.
 AI is research-only (extract/summarize, no buy/sell advice). Requires `ANTHROPIC_API_KEY`.

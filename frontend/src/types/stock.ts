@@ -321,24 +321,6 @@ export interface ConvictionProfile {
   disclaimer: string;
 }
 
-export interface AuthUser {
-  id: number;
-  email: string;
-  is_admin: boolean;
-}
-
-export interface WaitlistItem {
-  id: number;
-  email: string;
-  note: string | null;
-  created_at: string | null;
-}
-
-export interface AdminStats {
-  users: number;
-  waitlist: number;
-}
-
 export interface RadarWatchItem {
   symbol: string;
   company_name: string | null;

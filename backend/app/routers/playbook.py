@@ -6,8 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Depends
 
 from app.database import get_db
-from app.models import Playbook, User
-from app.routers.auth import get_current_user
+from app.models import Playbook
 from app.schemas.playbook import PlaybookOut, PlaybookUpdate
 from app.schemas.stock import Envelope
 
@@ -69,17 +68,16 @@ Công cụ chỉ trình bày dữ liệu & phân tích khách quan để bạn T
 """
 
 
-async def _get_or_create(db: AsyncSession, user_id: int) -> Playbook:
+async def _get_or_create(db: AsyncSession) -> Playbook:
     row = (
         await db.execute(
             select(Playbook)
-            .where(Playbook.user_id == user_id)
             .order_by(Playbook.id.asc())
             .limit(1)
         )
     ).scalar_one_or_none()
     if row is None:
-        row = Playbook(content=DEFAULT_CONTENT, user_id=user_id)
+        row = Playbook(content=DEFAULT_CONTENT)
         db.add(row)
         await db.commit()
         await db.refresh(row)
@@ -96,18 +94,16 @@ def _to_out(row: Playbook) -> PlaybookOut:
 @router.get("", response_model=Envelope[PlaybookOut])
 async def get_playbook(
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
 ) -> Envelope[PlaybookOut]:
-    return Envelope(data=_to_out(await _get_or_create(db, user.id)))
+    return Envelope(data=_to_out(await _get_or_create(db)))
 
 
 @router.put("", response_model=Envelope[PlaybookOut])
 async def update_playbook(
     body: PlaybookUpdate,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
 ) -> Envelope[PlaybookOut]:
-    row = await _get_or_create(db, user.id)
+    row = await _get_or_create(db)
     row.content = body.content
     await db.commit()
     await db.refresh(row)

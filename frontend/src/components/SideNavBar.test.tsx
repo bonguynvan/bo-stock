@@ -2,12 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import SideNavBar from "./SideNavBar";
 
-// SideNavBar self-fetches /auth/me (for the admin link) and can call logout.
-vi.mock("@/lib/api", () => ({
-  getMe: vi.fn().mockResolvedValue(null),
-  logout: vi.fn().mockResolvedValue(undefined),
-}));
-
 describe("SideNavBar", () => {
   it("renders the five group headers and every destination", () => {
     render(<SideNavBar active="Terminal" onNavigate={() => {}} />);

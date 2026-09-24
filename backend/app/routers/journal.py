@@ -11,8 +11,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import JournalEntry, User
-from app.routers.auth import get_current_user
+from app.models import JournalEntry
 from app.schemas.journal import JournalCreate, JournalOut, JournalUpdate
 from app.schemas.stock import Envelope
 from app.services.stock_service import latest_close_price
@@ -45,7 +44,6 @@ def _to_out(e: JournalEntry) -> JournalOut:
 async def create_entry(
     req: JournalCreate,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
 ) -> Envelope[JournalOut]:
     symbol = req.normalized_symbol()
     price = await latest_close_price(db, symbol) if symbol else None
@@ -57,7 +55,6 @@ async def create_entry(
         catalyst=req.catalyst,
         price_at_entry=price,
         status="open",
-        user_id=user.id,
     )
     db.add(row)
     await db.commit()
@@ -69,11 +66,9 @@ async def create_entry(
 async def list_entries(
     symbol: str | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
 ) -> Envelope[list[JournalOut]]:
     stmt = (
         select(JournalEntry)
-        .where(JournalEntry.user_id == user.id)
         .order_by(JournalEntry.created_at.desc())
     )
     if symbol:
@@ -87,12 +82,11 @@ async def update_entry(
     entry_id: int,
     req: JournalUpdate,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
 ) -> Envelope[JournalOut]:
     row = (
         await db.execute(
             select(JournalEntry).where(
-                JournalEntry.id == entry_id, JournalEntry.user_id == user.id
+                JournalEntry.id == entry_id
             )
         )
     ).scalar_one_or_none()
@@ -113,11 +107,10 @@ async def update_entry(
 async def delete_entry(
     entry_id: int,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
 ) -> Envelope[dict]:
     result = await db.execute(
         delete(JournalEntry).where(
-            JournalEntry.id == entry_id, JournalEntry.user_id == user.id
+            JournalEntry.id == entry_id
         )
     )
     await db.commit()

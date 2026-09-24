@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, Float, ForeignKey, String, Text, func
+from sqlalchemy import Date, DateTime, Float, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -18,9 +18,6 @@ class Position(Base):
     __tablename__ = "positions"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int | None] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
     # Not an FK — keep flexible for delisted / not-yet-synced tickers.
     symbol: Mapped[str] = mapped_column(String(10), index=True)
     quantity: Mapped[float] = mapped_column(Float)  # shares

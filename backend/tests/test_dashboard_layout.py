@@ -26,19 +26,19 @@ class TestNormalizeTiles:
         assert normalize_tiles(["world", 3, None, "crypto"]) == ["world", "crypto"]
 
 
-async def test_layout_seeds_default_then_persists_reorder(session, user) -> None:
+async def test_layout_seeds_default_then_persists_reorder(session) -> None:
     from app.routers.dashboard import get_layout, update_layout
     from app.schemas.dashboard import DashboardLayoutUpdate
 
     # First GET seeds + returns the default order.
-    seeded = await get_layout(db=session, user=user)
+    seeded = await get_layout(db=session)
     assert seeded.data.tiles == list(DEFAULT_TILES)
     assert seeded.data.allowed == list(DEFAULT_TILES)
 
     # PUT a reordered + reduced set (unknown key dropped).
-    updated = await update_layout(DashboardLayoutUpdate(tiles=["macro", "world", "ghost"]), db=session, user=user)
+    updated = await update_layout(DashboardLayoutUpdate(tiles=["macro", "world", "ghost"]), db=session)
     assert updated.data.tiles == ["macro", "world"]
 
     # GET reflects the persisted layout.
-    again = await get_layout(db=session, user=user)
+    again = await get_layout(db=session)
     assert again.data.tiles == ["macro", "world"]

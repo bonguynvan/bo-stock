@@ -11,8 +11,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import Position, User
-from app.routers.auth import get_current_user
+from app.models import Position
 from app.schemas.portfolio import (
     PortfolioAnalysis,
     PositionCreate,
@@ -48,29 +47,25 @@ def _parse_date(s: str | None) -> date | None:
 @router.get("/analysis", response_model=Envelope[PortfolioAnalysis])
 async def analysis(
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
 ) -> Envelope[PortfolioAnalysis]:
-    return Envelope(data=await portfolio.get_analysis(db, user.id))
+    return Envelope(data=await portfolio.get_analysis(db))
 
 
 @router.get("/risk", response_model=Envelope[dict])
 async def risk_analytics(
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
 ) -> Envelope[dict]:
     """Portfolio risk stats (volatility/Sharpe/drawdown/VaR + correlations). Research-only."""
-    return Envelope(data=await portfolio_risk.get_portfolio_risk(db, user.id))
+    return Envelope(data=await portfolio_risk.get_portfolio_risk(db))
 
 
 @router.get("", response_model=Envelope[list[PositionOut]])
 async def list_positions(
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
 ) -> Envelope[list[PositionOut]]:
     rows = (
         await db.execute(
             select(Position)
-            .where(Position.user_id == user.id)
             .order_by(Position.created_at)
         )
     ).scalars().all()
@@ -81,11 +76,10 @@ async def list_positions(
 async def create_position(
     req: PositionCreate,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
 ) -> Envelope[PositionOut]:
     row = Position(
         symbol=req.symbol, quantity=req.quantity, avg_cost=req.avg_cost,
-        note=req.note, opened_at=_parse_date(req.opened_at), user_id=user.id,
+        note=req.note, opened_at=_parse_date(req.opened_at),
     )
     db.add(row)
     await db.commit()
@@ -98,12 +92,11 @@ async def update_position(
     position_id: int,
     req: PositionUpdate,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
 ) -> Envelope[PositionOut]:
     row = (
         await db.execute(
             select(Position).where(
-                Position.id == position_id, Position.user_id == user.id
+                Position.id == position_id
             )
         )
     ).scalar_one_or_none()
@@ -121,11 +114,10 @@ async def update_position(
 async def delete_position(
     position_id: int,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
 ) -> Envelope[dict]:
     result = await db.execute(
         delete(Position).where(
-            Position.id == position_id, Position.user_id == user.id
+            Position.id == position_id
         )
     )
     await db.commit()

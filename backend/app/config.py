@@ -3,10 +3,9 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from pydantic import Field, computed_field, model_validator
+from pydantic import Field, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-_INSECURE_JWT_DEFAULT = "dev-insecure-secret-change-me"
 
 
 class Settings(BaseSettings):
@@ -42,18 +41,6 @@ class Settings(BaseSettings):
     # World markets (Yahoo) + crypto (CoinGecko) need no key; macro (FRED) is freemium.
     fred_api_key: str | None = None
 
-    # Auth (self-hosted JWT in an httpOnly cookie). Private-beta: registration needs
-    # the invite code when set. Set a strong jwt_secret + auth_cookie_secure=true in prod.
-    jwt_secret: str = "dev-insecure-secret-change-me"
-    jwt_expire_hours: int = 168  # 7 days
-    auth_cookie_name: str = "vnios_session"
-    auth_cookie_secure: bool = False  # True behind HTTPS in prod
-    auth_invite_code: str | None = None  # when set, required to register
-    admin_emails: str = ""  # comma-separated emails granted admin (bootstrap)
-    # When True, all non-public API routes require a valid session (prod gate).
-    # Default False so local/dev + the test suite stay open.
-    auth_required: bool = False
-
     # Scheduler
     scheduler_enabled: bool = False
     sync_timezone: str = "Asia/Ho_Chi_Minh"
@@ -68,21 +55,6 @@ class Settings(BaseSettings):
     # USD per million tokens — used only to log a rough cost per analysis.
     anthropic_price_in_per_mtok: float = 3.0
     anthropic_price_out_per_mtok: float = 15.0
-
-    @model_validator(mode="after")
-    def _enforce_prod_auth(self) -> "Settings":
-        """In production, refuse to start with insecure auth defaults (fail fast)."""
-        if self.app_env == "production":
-            problems = []
-            if self.jwt_secret == _INSECURE_JWT_DEFAULT:
-                problems.append("JWT_SECRET must be set to a strong random value")
-            if not self.auth_cookie_secure:
-                problems.append("AUTH_COOKIE_SECURE must be true (HTTPS)")
-            if not self.auth_required:
-                problems.append("AUTH_REQUIRED must be true")
-            if problems:
-                raise ValueError("Insecure production config: " + "; ".join(problems))
-        return self
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -103,9 +75,6 @@ class Settings(BaseSettings):
         tauri = ["tauri://localhost", "http://tauri.localhost", "https://tauri.localhost"]
         return list(dict.fromkeys(configured + tauri))
 
-    @property
-    def admin_email_list(self) -> list[str]:
-        return [e.strip().lower() for e in self.admin_emails.split(",") if e.strip()]
 
 
 @lru_cache

@@ -12,11 +12,8 @@ from app.models.playbook import Playbook
 from app.models.portfolio import Position
 from app.models.screener import SavedFilter, Watchlist
 from app.models.stock import Stock, StockMetric
-from app.models.user import User, WaitlistEntry
 
 __all__ = [
-    "User",
-    "WaitlistEntry",
     "Stock",
     "StockMetric",
     "MetricHistory",

@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.pool import StaticPool
 
 from app.database import Base
-from app.models import Stock, StockMetric, User
+from app.models import Stock, StockMetric
 
 # symbol -> (roe, pe, quant_score, market_cap, close_price)
 SEED: dict[str, tuple[float, float, float, int, float]] = {
@@ -54,13 +54,3 @@ async def session() -> AsyncIterator[AsyncSession]:
         await s.commit()
         yield s
     await engine.dispose()
-
-
-@pytest_asyncio.fixture
-async def user(session) -> User:
-    """A persisted User for exercising the per-user (multi-tenant) router functions."""
-    u = User(email="test@example.com", password_hash="x")
-    session.add(u)
-    await session.commit()
-    await session.refresh(u)
-    return u

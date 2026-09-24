@@ -11,8 +11,6 @@ import type {
   SymbolForeign,
   SymbolProp,
   SymbolInsider,
-  WaitlistItem,
-  AdminStats,
   DcfParams,
   DcfResult,
   Compass,
@@ -63,7 +61,6 @@ import type {
   RadarCoverage,
   RadarResult,
   RadarWatchItem,
-  AuthUser,
 } from "@/types/stock";
 
 const API_BASE_URL =
@@ -114,7 +111,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<ApiEnvelope
         "Content-Type": "application/json",
         ...(init?.headers ?? {}),
       },
-      credentials: "include", // send/receive the httpOnly session cookie
       cache: "no-store",
     });
   } catch (err) {
@@ -133,52 +129,6 @@ function buildQuery(params: Record<string, string | number | undefined>): string
   }
   const qs = search.toString();
   return qs ? `?${qs}` : "";
-}
-
-// --- Auth + waitlist ---
-export async function register(email: string, password: string, inviteCode?: string): Promise<AuthUser> {
-  const body = await request<AuthUser>("/auth/register", {
-    method: "POST",
-    body: JSON.stringify({ email, password, invite_code: inviteCode }),
-  });
-  return body.data as AuthUser;
-}
-
-export async function login(email: string, password: string): Promise<AuthUser> {
-  const body = await request<AuthUser>("/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
-  });
-  return body.data as AuthUser;
-}
-
-export async function logout(): Promise<void> {
-  await request("/auth/logout", { method: "POST" });
-}
-
-/** Current user from the session cookie, or null when not logged in (401). */
-export async function getMe(): Promise<AuthUser | null> {
-  try {
-    const body = await request<AuthUser>("/auth/me");
-    return body.data ?? null;
-  } catch (err) {
-    if (err instanceof ApiError && err.status === 401) return null;
-    throw err;
-  }
-}
-
-export async function joinWaitlist(email: string, note?: string): Promise<void> {
-  await request("/waitlist", { method: "POST", body: JSON.stringify({ email, note }) });
-}
-
-export async function getAdminWaitlist(): Promise<WaitlistItem[]> {
-  const body = await request<WaitlistItem[]>("/admin/waitlist");
-  return body.data ?? [];
-}
-
-export async function getAdminStats(): Promise<AdminStats> {
-  const body = await request<AdminStats>("/admin/stats");
-  return (body.data as AdminStats) ?? { users: 0, waitlist: 0 };
 }
 
 export async function getStocks(params: GetStocksParams = {}): Promise<StocksResponse> {
@@ -741,7 +691,6 @@ export async function uploadDocument(
     res = await fetch(`${API_BASE_URL}/documents`, {
       method: "POST",
       body: form,
-      credentials: "include",
       cache: "no-store",
     });
   } catch (err) {
@@ -765,7 +714,6 @@ export async function downloadStockReport(symbol: string): Promise<void> {
   let res: Response;
   try {
     res = await fetch(`${API_BASE_URL}/stocks/${encodeURIComponent(symbol)}/report.pdf`, {
-      credentials: "include",
       cache: "no-store",
     });
   } catch (err) {
@@ -791,7 +739,7 @@ export async function downloadCompareReport(symbols: string[]): Promise<void> {
   const qs = encodeURIComponent(symbols.join(","));
   let res: Response;
   try {
-    res = await fetch(`${API_BASE_URL}/reports/compare.pdf?symbols=${qs}`, { credentials: "include", cache: "no-store" });
+    res = await fetch(`${API_BASE_URL}/reports/compare.pdf?symbols=${qs}`, { cache: "no-store" });
   } catch (err) {
     throw new ApiError(err instanceof Error ? err.message : "Network error", 0);
   }

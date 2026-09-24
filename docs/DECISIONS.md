@@ -134,35 +134,15 @@ the flagged→watchlist→signal bridge. Next: correlate flags with negative/ins
   conflicts with the AI-on-explicit-action scope); the per-stock AI news panel stays the
   on-demand path. Closes the flagged→watchlist→signal loop back to the user.
 
-## Public landing + self-hosted auth (2026-08-02)
-Going public as a **landing + waitlist**, app behind a **private-beta login** — deliberately
-NOT exposing the VCI-derived data to strangers (respects the data-licensing gate). Decisions: self-hosted JWT (bcrypt + PyJWT, HS256) in an httpOnly cookie — no external
-auth SaaS; registration gated by an invite code (`AUTH_INVITE_CODE`); a config-gated
-`auth_gate` middleware (`AUTH_REQUIRED`) protects non-public routes in prod while leaving
-dev/tests open. **No multi-tenancy yet** — data stays global behind login; per-user scoping
-(user_id on watchlist/alerts/playbook/dashboard/portfolio/notes/saved_filters) is a later
-migration. Frontend restructured: `/` landing, `/login` `/register`, `/app` (AuthGuard).
-Prod checklist: strong JWT_SECRET, AUTH_COOKIE_SECURE=true, AUTH_REQUIRED=true, set invite code.
-
-## Multi-tenancy — per-user data scoping (2026-08-03)
-Followed the landing/auth work: the 8 personal tables (watchlist, saved_filters, positions,
-journal_entries, notes, playbook, dashboard_layout, alerts) now carry a nullable indexed
-`user_id` (migration 0022). Every personal router endpoint requires `Depends(get_current_user)`
-and scopes queries by `user.id`; all update/delete/get-by-id fetch by **id AND user_id**
-(IDOR-safe, 404 otherwise). Single-row stores (playbook/dashboard/alerts) became one-row-per-user
-via `_get_or_create(db, user_id)`. Services `portfolio.get_analysis` / `portfolio_risk` take an
-OPTIONAL `user_id` (unscoped when None) so pure service tests stay untouched; routers always pass
-`user.id`. Market/reference data (stocks, metrics, fraud_scores, screener market endpoints,
-documents) stays shared/global. Consequence: personal endpoints now 401 without a session even in
-dev — the app requires login (AuthGuard handles the redirect). Per-user isolation covered by a
-cross-tenant IDOR test on notes.
-
-## Admin panel (waitlist) (2026-08-03)
-Admin is bootstrapped via `ADMIN_EMAILS` (comma-separated env) — reconciled onto `User.is_admin`
-at register/login (no DB edit needed). `require_admin` dependency gates `/admin/*`
-(GET /admin/waitlist, GET /admin/stats → 403 for non-admins). Frontend `/admin` page
-(AuthGuard + self-gating on 403) lists waitlist emails + a copy-CSV; the "Quản trị" nav link
-in the side bar shows only when /auth/me reports is_admin.
+## Auth removed — single-user, self-hosted (2026-09-24)
+The project is open source and meant to be run by each user on their own machine, so the
+private-beta login layer was removed: no `/auth`, `/waitlist`, `/admin` routes, no JWT/bcrypt,
+no landing/waitlist page (`/` redirects to `/app`). The personal tables lost their `user_id`
+scoping column and the `users`/`waitlist` tables were dropped (migration `0023_drop_auth`).
+Consequence: **never expose the backend to the public internet** — it has no access control
+and can spend your `ANTHROPIC_API_KEY` (AI analysis, assistant, NL screener). Put it behind
+your own reverse-proxy auth / VPN if you deploy it remotely. Earlier auth/multi-tenancy/admin-panel
+decisions are superseded by this one.
 
 ## Giai đoạn 2 — news signals folded into the trust card (2026-08-03)
 Closed the Giai đoạn 1↔2 loop at the per-stock level: `ConvictionCard` gains an on-demand

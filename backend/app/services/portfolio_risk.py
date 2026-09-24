@@ -18,8 +18,8 @@ _MIN_BARS = 20  # per symbol
 _MIN_COMMON = 21  # aligned sessions across symbols
 
 
-async def get_portfolio_risk(session: AsyncSession, user_id: int | None = None) -> dict:
-    analysis = await portfolio.get_analysis(session, user_id)
+async def get_portfolio_risk(session: AsyncSession) -> dict:
+    analysis = await portfolio.get_analysis(session)
     priced = [
         h for h in analysis["holdings"] if h.get("market_value") and h.get("weight")
     ]

@@ -48,9 +48,7 @@ Full commands and gotchas: [docs/RUNBOOK.md](docs/RUNBOOK.md).
 ## Desktop app (Tauri)
 
 A native desktop build wraps the frontend (static-exported) in a Tauri (Rust) shell and
-points at your **local** backend. It runs in single-user mode with **no login** — the
-backend's per-user tables treat `user_id = None` as unscoped, so watchlists/portfolio/
-journal all work without auth (this also sidesteps cross-origin cookie friction).
+points at your **local** backend.
 
 ```bash
 # backend running first (Docker, as above) → http://localhost:8000
@@ -73,6 +71,13 @@ unaffected. Tauri config: `frontend/src-tauri/tauri.conf.json`.
   broadcast — the main window drives it, `◉`-linked detail windows follow.
 - **Bàn làm việc (workspace):** an in-app floating-panel MDI (drag/resize/z-order) to lay
   several screens side by side; layout persists to localStorage. Works on web too.
+
+## Security note
+
+There is **no login**: the app is single-user and self-hosted. Run it on your own machine or a
+trusted network. Do **not** expose the backend to the public internet — anyone reaching it could
+read/modify your portfolio and journal and spend your `ANTHROPIC_API_KEY`. If you deploy it
+remotely, put it behind your own auth (reverse proxy, VPN, or SSO gateway).
 
 ## Data source note
 

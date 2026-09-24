@@ -51,10 +51,10 @@ class TestEvaluate:
             assert bool(alerts.evaluate_rules(r, vals)) is should
 
 
-async def test_router_seed_persist_and_evaluate(session, user) -> None:
+async def test_router_seed_persist_and_evaluate(session) -> None:
     from app.routers.alerts import get_alerts, triggered, update_alerts, AlertsUpdate
 
-    seeded = await get_alerts(db=session, user=user)
+    seeded = await get_alerts(db=session)
     assert seeded.data["rules"] == []
     assert "pe" in seeded.data["metrics"]
 
@@ -63,9 +63,9 @@ async def test_router_seed_persist_and_evaluate(session, user) -> None:
         {"symbol": "AAA", "metric": "pe", "op": "lt", "value": 15},   # fires (10<15)
         {"symbol": "AAA", "metric": "roe", "op": "gt", "value": 50},  # not (30>50 false)
     ])
-    saved = await update_alerts(body, db=session, user=user)
+    saved = await update_alerts(body, db=session)
     assert len(saved.data["rules"]) == 2
 
-    fired = await triggered(db=session, user=user)
+    fired = await triggered(db=session)
     assert [f["metric"] for f in fired.data] == ["pe"]
     assert fired.data[0]["current"] == 10.0

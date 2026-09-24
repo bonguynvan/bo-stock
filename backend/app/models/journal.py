@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, String, Text, func
+from sqlalchemy import DateTime, Float, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -17,9 +17,6 @@ class JournalEntry(Base):
     __tablename__ = "journal_entries"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int | None] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
     # Optional link to a stock (not an FK — keep free notes / delisted symbols).
     symbol: Mapped[str | None] = mapped_column(String(10), index=True)
     action: Mapped[str] = mapped_column(String(10))  # buy / sell / watch / note

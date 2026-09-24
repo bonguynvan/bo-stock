@@ -6,8 +6,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import Note, User
-from app.routers.auth import get_current_user
+from app.models import Note
 from app.schemas.note import NoteCreate, NoteOut, NoteUpdate
 from app.schemas.stock import Envelope
 
@@ -28,10 +27,9 @@ def _to_out(n: Note) -> NoteOut:
 async def create_note(
     req: NoteCreate,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
 ) -> Envelope[NoteOut]:
     symbol = req.symbol.strip().upper() if req.symbol and req.symbol.strip() else None
-    row = Note(symbol=symbol, content=req.content.strip(), user_id=user.id)
+    row = Note(symbol=symbol, content=req.content.strip())
     db.add(row)
     await db.commit()
     await db.refresh(row)
@@ -42,9 +40,8 @@ async def create_note(
 async def list_notes(
     symbol: str | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
 ) -> Envelope[list[NoteOut]]:
-    stmt = select(Note).where(Note.user_id == user.id).order_by(Note.created_at.desc())
+    stmt = select(Note).order_by(Note.created_at.desc())
     if symbol:
         stmt = stmt.where(Note.symbol == symbol.strip().upper())
     rows = (await db.execute(stmt)).scalars().all()
@@ -56,11 +53,10 @@ async def update_note(
     note_id: int,
     req: NoteUpdate,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
 ) -> Envelope[NoteOut]:
     row = (
         await db.execute(
-            select(Note).where(Note.id == note_id, Note.user_id == user.id)
+            select(Note).where(Note.id == note_id)
         )
     ).scalar_one_or_none()
     if row is None:
@@ -75,10 +71,9 @@ async def update_note(
 async def delete_note(
     note_id: int,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
 ) -> Envelope[dict]:
     result = await db.execute(
-        delete(Note).where(Note.id == note_id, Note.user_id == user.id)
+        delete(Note).where(Note.id == note_id)
     )
     await db.commit()
     if result.rowcount == 0:

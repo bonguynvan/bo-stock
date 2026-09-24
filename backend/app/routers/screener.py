@@ -8,8 +8,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import FraudScore, SavedFilter, Stock, User
-from app.routers.auth import get_current_user
+from app.models import FraudScore, SavedFilter, Stock
 from app.schemas.screener import SaveFilterRequest, ScreenerRequest
 from app.schemas.stock import Envelope, StockResult
 from app.services import compass, factors, highlights, nl_screener, signal_radar
@@ -146,10 +145,9 @@ async def filter_stocks(
 async def save_filter(
     req: SaveFilterRequest,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
 ) -> Envelope[dict]:
     row = SavedFilter(
-        name=req.name, criteria=req.criteria.model_dump(), user_id=user.id
+        name=req.name, criteria=req.criteria.model_dump()
     )
     db.add(row)
     await db.commit()
@@ -175,10 +173,9 @@ async def list_sectors(db: AsyncSession = Depends(get_db)) -> Envelope[list[str]
 @router.get("/saved", response_model=Envelope[list[dict]])
 async def list_saved(
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
 ) -> Envelope[list[dict]]:
     rows = (
-        await db.execute(select(SavedFilter).where(SavedFilter.user_id == user.id))
+        await db.execute(select(SavedFilter))
     ).scalars().all()
     return Envelope(
         data=[
@@ -191,11 +188,10 @@ async def list_saved(
 async def delete_saved(
     filter_id: int,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
 ) -> Envelope[dict]:
     result = await db.execute(
         delete(SavedFilter).where(
-            SavedFilter.id == filter_id, SavedFilter.user_id == user.id
+            SavedFilter.id == filter_id
         )
     )
     await db.commit()

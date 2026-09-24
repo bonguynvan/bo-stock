@@ -21,4 +21,5 @@ RUN playwright install --with-deps chromium
 COPY . .
 
 EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Apply migrations, then serve. Postgres readiness is handled by the compose healthcheck.
+CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000"]

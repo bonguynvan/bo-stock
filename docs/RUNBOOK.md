@@ -6,16 +6,20 @@ use Git Bash. Backend runs in Docker (python:3.12); frontend on host Node 24.
 ## Prerequisites
 - Docker Desktop running (engine up)
 - Node 24 / npm 11 (frontend)
-- `cp .env backend/.env` already present locally? If not: `cp backend/.env.example backend/.env`
-  and set `POSTGRES_HOST=postgres` for the compose network. Root `.env` needs `POSTGRES_PASSWORD`.
+- No env files are required. Optional: `cp backend/.env.example backend/.env` for API keys
+  (`ANTHROPIC_API_KEY`, `FRED_API_KEY`); root `.env` may set `POSTGRES_PASSWORD` (default `changeme`).
 
 ## Start the stack
 ```bash
-docker compose up -d postgres        # Postgres 16
+docker compose up --build            # postgres + backend (runs `alembic upgrade head`) + frontend
+# or step by step:
+docker compose up -d postgres
 docker compose build backend         # python:3.12 image (pip install)
-docker compose run --rm backend alembic upgrade head   # migrate
-docker compose up -d backend         # API at http://localhost:8000/docs
+docker compose up -d backend         # API at http://localhost:8000/docs (migrates on start)
 ```
+The frontend container serves the production build at http://localhost:3000. For hot reload use
+`docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build`. `NEXT_PUBLIC_API_URL`
+is baked at build time — after changing it, `docker compose build frontend`.
 
 ## Frontend
 ```bash

@@ -26,22 +26,31 @@ docs/       RUNBOOK · DATA_SOURCES · DECISIONS · API_CONTRACT
 docker-compose.yml
 ```
 
-## Quick start (Docker; local Python 3.14 can't build deps — see DECISIONS.md)
+## Quick start (Docker)
+
+Requires Docker Desktop (or Docker Engine + Compose v2.24+).
 
 ```bash
-docker compose up -d postgres
-docker compose build backend
-docker compose run --rm backend alembic upgrade head
-docker compose up -d backend                 # http://localhost:8000/docs
-
-# verify pipeline (offline sample data):
-docker compose run --rm backend python -m scripts.seed_stocks --fixtures
-# live VCI data (gentle):
-docker compose run --rm -e DATA_PROVIDER=vci -e HTTP_RATE_LIMIT_PER_SEC=1 \
-  backend python -m scripts.seed_stocks
-
-cd frontend && cp .env.local.example .env.local && npm install && npm run dev  # :3000
+git clone https://github.com/bonguynvan/bo-stock.git && cd bo-stock
+docker compose up --build          # postgres + backend (auto-migrates) + frontend
 ```
+
+Open **http://localhost:3000** (API docs: http://localhost:8000/docs). The database starts empty —
+load some data in a second terminal:
+
+```bash
+# 5 sample tickers, offline, ~10 seconds — enough to try the UI:
+docker compose run --rm backend python -m scripts.seed_stocks --fixtures
+
+# Real data for the whole market (VCI, ~15 min, gentle rate limit):
+docker compose run --rm -e DATA_PROVIDER=vci -e HTTP_RATE_LIMIT_PER_SEC=1   backend python -m scripts.full_sync --concurrency 4
+```
+
+Optional features (AI analysis/assistant, macro data) need keys: `cp backend/.env.example backend/.env`,
+set `ANTHROPIC_API_KEY` / `FRED_API_KEY`, then `docker compose up -d --force-recreate backend`.
+
+Everything binds to `127.0.0.1` only. Stop with `docker compose down` (add `-v` to wipe the database).
+Hot-reload dev mode: `docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build`.
 
 Full commands and gotchas: [docs/RUNBOOK.md](docs/RUNBOOK.md).
 

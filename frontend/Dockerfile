@@ -1,16 +1,21 @@
-# V-Investment OS — Frontend (Phase 1: dev server)
-FROM node:24-alpine
-
+# V-Investment OS — Frontend. Default target = production build (next build + next start);
+# `--target dev` = hot-reload dev server (used by docker-compose.dev.yml).
+FROM node:24-alpine AS base
 WORKDIR /app
-
-# Install dependencies first for better layer caching
 COPY package.json package-lock.json* ./
-RUN npm install
+RUN npm ci --legacy-peer-deps || npm install --legacy-peer-deps
 
-# Copy source
+FROM base AS dev
 COPY . .
-
 EXPOSE 3000
-
-# Phase 1: run the dev server. Swap for `npm run build && npm run start` for prod.
 CMD ["npm", "run", "dev"]
+
+FROM base AS prod
+# NEXT_PUBLIC_* vars are inlined at build time, so the API URL must be a build arg.
+ARG NEXT_PUBLIC_API_URL=http://localhost:8000
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_TELEMETRY_DISABLED=1
+COPY . .
+RUN npm run build
+EXPOSE 3000
+CMD ["npm", "run", "start"]
